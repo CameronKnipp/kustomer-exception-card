@@ -8,7 +8,17 @@ window.Kustomer.initialize((context) => {
     context.object ||
     {};
 
-  const exceptionIDs = (customer.custom?.exceptionLogIDsTxt || '')
+  const customerId =
+    customer.id ||
+    customer.attributes?.id ||
+    '';
+
+  const exceptionIDsTxt =
+    customer.attributes?.custom?.exceptionLogIDsTxt ||
+    customer.custom?.exceptionLogIDsTxt ||
+    '';
+
+  const exceptionIDs = exceptionIDsTxt
     .split(',')
     .map(x => x.trim())
     .filter(Boolean);
@@ -52,8 +62,8 @@ window.Kustomer.initialize((context) => {
       items.forEach((item) => {
         const title = item.attributes?.title || 'Exception';
         const created = item.attributes?.createdAt || '';
-        const reason = item.attributes?.custom?.exceptionReasonStr || '';
-        const order = item.attributes?.custom?.orderNumberStr || '';
+        const reason = item.attributes?.custom?.exceptionReasonStr || '—';
+        const order = item.attributes?.custom?.orderNumberStr || '—';
 
         const card = document.createElement('div');
         card.className = 'exception-card';
@@ -62,8 +72,8 @@ window.Kustomer.initialize((context) => {
           <div class="exception-title">${title}</div>
           <div class="exception-date">${created ? new Date(created).toLocaleDateString() : '—'}</div>
           <div class="exception-meta">
-            Reason: ${reason || '—'}<br/>
-            Order: ${order || '—'}
+            Reason: ${reason}<br/>
+            Order: ${order}
           </div>
         `;
 
