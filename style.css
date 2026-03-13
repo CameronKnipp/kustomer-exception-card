@@ -10,8 +10,9 @@ body {
   margin-bottom: 10px;
 }
 
-.clickable {
-  cursor: pointer;
+.clickable:hover {
+  border-color: #52aaff;
+  background: #f0f9ff;
 }
 
 .exception-card {
