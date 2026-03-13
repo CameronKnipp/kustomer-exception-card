@@ -1,76 +1,115 @@
-console.log('EXCEPTION CARD SCRIPT LOADED - v12');
+<script>
+console.log('EXCEPTION CARD SCRIPT LOADED - v13');
 
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
 
+  const get = (obj, path, fallback = undefined) => {
+    try {
+      const value = path.split('.').reduce((acc, key) => {
+        if (acc == null) return undefined;
+        return acc[key];
+      }, obj);
+      return value === undefined ? fallback : value;
+    } catch (e) {
+      return fallback;
+    }
+  };
+
+  const escapeHtml = (str) => {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   const contextCustomer =
-    _.get(context, 'customer') ||
-    _.get(context, 'user.customer') ||
-    _.get(context, 'conversation.customer') ||
-    _.get(context, 'object') ||
+    get(context, 'customer') ||
+    get(context, 'user.customer') ||
+    get(context, 'conversation.customer') ||
+    get(context, 'object') ||
     {};
 
   const customerId =
-    _.get(contextCustomer, 'id') ||
-    _.get(contextCustomer, 'attributes.id') ||
+    get(contextCustomer, 'id') ||
+    get(contextCustomer, 'attributes.id') ||
     '';
 
   const container = document.getElementById('exceptions-list');
 
   const setStatus = (msg) => {
-    if (container) container.innerHTML = msg;
+    if (container) {
+      container.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
+    }
   };
 
   const parseIds = (txt) =>
-    (txt || '')
+    String(txt || '')
       .split(',')
       .map((x) => x.trim())
       .filter(Boolean);
 
-  const normalizeToArray = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (_.get(value, 'id')) return [value];
+  const normalizeApiResult = (payload) => {
+    // Handles:
+    // { data: [...] }
+    // { data: {...} }
+    // [...]
+    // {...}
+    if (!payload) return [];
+
+    const source = payload.data !== undefined ? payload.data : payload;
+
+    if (Array.isArray(source)) return source;
+    if (source && typeof source === 'object' && source.id) return [source];
+
     return [];
   };
 
   const resizeCard = () => {
     setTimeout(() => {
-      if (window.Kustomer?.resize) {
+      if (window.Kustomer && typeof window.Kustomer.resize === 'function') {
         window.Kustomer.resize();
       }
     }, 100);
   };
 
+  if (!container) {
+    console.error('Missing #exceptions-list container');
+    return;
+  }
+
   if (!customerId) {
     setStatus('Customer not found.');
+    resizeCard();
     return;
   }
 
   let lastRenderedIds = '';
 
   const renderCards = (items) => {
-    if (!items.length) {
+    if (!Array.isArray(items) || items.length === 0) {
       setStatus('No exceptions logged for this customer.');
       resizeCard();
       return;
     }
 
-    items.sort((a, b) => {
-      const aDate = new Date(_.get(a, 'attributes.createdAt', 0)).getTime();
-      const bDate = new Date(_.get(b, 'attributes.createdAt', 0)).getTime();
+    const normalizedItems = [...items].sort((a, b) => {
+      const aDate = new Date(get(a, 'attributes.createdAt', 0)).getTime();
+      const bDate = new Date(get(b, 'attributes.createdAt', 0)).getTime();
       return bDate - aDate;
     });
 
     container.innerHTML = '';
 
-    items.forEach((item) => {
-      const exceptionId = _.get(item, 'id', '');
-      const title = _.get(item, 'attributes.title', 'Exception');
-      const created = _.get(item, 'attributes.createdAt', '');
-      const reason = _.get(item, 'attributes.custom.exceptionReasonStr', '—');
-      const order = _.get(item, 'attributes.custom.orderNumberStr', '—');
-      const notes = _.get(item, 'attributes.custom.exceptionNotesTxt', '');
+    normalizedItems.forEach((item) => {
+      const exceptionId = get(item, 'id', '');
+      const title = get(item, 'attributes.title', 'Exception');
+      const created = get(item, 'attributes.createdAt', '');
+      const reason = get(item, 'attributes.custom.exceptionReasonStr', '—');
+      const order = get(item, 'attributes.custom.orderNumberStr', '—');
+      const notes = get(item, 'attributes.custom.exceptionNotesTxt', '');
 
       const createdDisplay = created
         ? new Date(created).toLocaleDateString('en-US', {
@@ -81,7 +120,9 @@ window.Kustomer.initialize((context) => {
         : '—';
 
       const notesPreview =
-        notes.length > 120 ? `${notes.slice(0, 120)}…` : (notes || '—');
+        String(notes || '').length > 120
+          ? `${String(notes).slice(0, 120)}…`
+          : (notes || '—');
 
       const card = document.createElement('div');
       card.className = 'exception-card clickable';
@@ -89,30 +130,35 @@ window.Kustomer.initialize((context) => {
       card.setAttribute('tabindex', '0');
 
       const openEvent = () => {
-        if (window.Kustomer?.openCustomerEvent) {
+        if (
+          window.Kustomer &&
+          typeof window.Kustomer.openCustomerEvent === 'function' &&
+          customerId &&
+          exceptionId
+        ) {
           window.Kustomer.openCustomerEvent(customerId, exceptionId);
         }
       };
 
-      card.onclick = openEvent;
-      card.onkeydown = (e) => {
+      card.addEventListener('click', openEvent);
+      card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           openEvent();
         }
-      };
+      });
 
       card.innerHTML = `
-        <div class="exception-title">${title}</div>
-        <div class="exception-date">${createdDisplay}</div>
+        <div class="exception-title">${escapeHtml(title)}</div>
+        <div class="exception-date">${escapeHtml(createdDisplay)}</div>
 
         <div class="exception-meta">
-          <div><strong>Reason:</strong> ${reason}</div>
-          <div><strong>Order:</strong> ${order}</div>
+          <div><strong>Reason:</strong> ${escapeHtml(reason)}</div>
+          <div><strong>Order:</strong> ${escapeHtml(order)}</div>
         </div>
 
         <div class="exception-notes">
-          <strong>Notes:</strong> ${notesPreview}
+          <strong>Notes:</strong> ${escapeHtml(notesPreview)}
         </div>
       `;
 
@@ -122,7 +168,18 @@ window.Kustomer.initialize((context) => {
     resizeCard();
   };
 
-  const fetchExceptionsByIds = (idsTxt) => {
+  const requestAsync = (options) =>
+    new Promise((resolve, reject) => {
+      window.Kustomer.request(options, (err, data) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(data);
+      });
+    });
+
+  const fetchExceptionsByIds = async (idsTxt) => {
     const ids = parseIds(idsTxt);
     console.log('Exception IDs to fetch:', ids);
 
@@ -131,74 +188,80 @@ window.Kustomer.initialize((context) => {
       return;
     }
 
-    const joinedIDs = ids.join(',');
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          requestAsync({
+            url: `/v1/klasses/exception_log/${encodeURIComponent(id)}`,
+            method: 'GET'
+          })
+        )
+      );
 
-    window.Kustomer.request(
-      {
-        url: `/v1/klasses/exception_log/${joinedIDs}?page=1&pageSize=100`,
-        method: 'GET'
-      },
-      (err, data) => {
-        console.log('Exception fetch err:', err);
-        console.log('Exception fetch data:', data);
+      const items = results
+        .filter((r) => r.status === 'fulfilled')
+        .flatMap((r) => normalizeApiResult(r.value));
 
-        const raw = data || err || [];
-        const items = normalizeToArray(raw);
+      console.log('Fetched exception items:', items);
 
-        console.log('Normalized exception items:', items);
-        renderCards(items);
-      }
-    );
+      // 0 results = no exceptions
+      // 1 result = array of 1
+      // 2+ results = array of many
+      renderCards(items);
+    } catch (error) {
+      console.error('Failed to fetch exceptions:', error);
+      setStatus('Could not load exceptions.');
+      resizeCard();
+    }
   };
 
-  const fetchFreshCustomer = (attempt = 0) => {
-    window.Kustomer.request(
-      {
-        url: `/v1/customers/${customerId}`,
+  const fetchFreshCustomer = async (attempt = 0) => {
+    try {
+      const customerData = await requestAsync({
+        url: `/v1/customers/${encodeURIComponent(customerId)}`,
         method: 'GET'
-      },
-      (err, data) => {
-        console.log('Fresh customer err:', err);
-        console.log('Fresh customer data:', data);
+      });
 
-        const customerData = data || err || {};
+      console.log('Fresh customer data:', customerData);
 
-        const freshIdsTxt =
-          _.get(customerData, 'attributes.custom.exceptionLogIDsTxt') ||
-          _.get(customerData, 'custom.exceptionLogIDsTxt') ||
-          '';
+      const freshIdsTxt =
+        get(customerData, 'data.attributes.custom.exceptionLogIDsTxt') ||
+        get(customerData, 'attributes.custom.exceptionLogIDsTxt') ||
+        get(customerData, 'custom.exceptionLogIDsTxt') ||
+        '';
 
-        const freshIds = parseIds(freshIdsTxt);
+      const freshIds = parseIds(freshIdsTxt);
 
-        console.log('Fresh exceptionLogIDsTxt:', freshIdsTxt);
+      console.log('Fresh exceptionLogIDsTxt:', freshIdsTxt);
 
-        // If there are no IDs, show the empty state immediately.
-        // Retry twice in the background so a just-created first exception can appear
-        // after the workflow updates the customer.
-        if (!freshIds.length) {
-          renderCards([]);
+      if (!freshIds.length) {
+        renderCards([]);
 
-          if (attempt < 2) {
-            setTimeout(() => fetchFreshCustomer(attempt + 1), 1200);
-          }
-          return;
+        if (attempt < 2) {
+          setTimeout(() => fetchFreshCustomer(attempt + 1), 1200);
         }
-
-        // Avoid refetching the same IDs repeatedly
-        if (freshIdsTxt === lastRenderedIds) {
-          return;
-        }
-
-        lastRenderedIds = freshIdsTxt;
-        fetchExceptionsByIds(freshIdsTxt);
+        return;
       }
-    );
+
+      if (freshIdsTxt === lastRenderedIds) {
+        return;
+      }
+
+      lastRenderedIds = freshIdsTxt;
+      await fetchExceptionsByIds(freshIdsTxt);
+    } catch (error) {
+      console.error('Failed to refresh customer:', error);
+
+      if (attempt === 0) {
+        setStatus('Could not load exceptions.');
+        resizeCard();
+      }
+    }
   };
 
-  // Use the initial context immediately if it already has IDs
   const initialIdsTxt =
-    _.get(contextCustomer, 'attributes.custom.exceptionLogIDsTxt') ||
-    _.get(contextCustomer, 'custom.exceptionLogIDsTxt') ||
+    get(contextCustomer, 'attributes.custom.exceptionLogIDsTxt') ||
+    get(contextCustomer, 'custom.exceptionLogIDsTxt') ||
     '';
 
   const initialIds = parseIds(initialIdsTxt);
@@ -206,12 +269,10 @@ window.Kustomer.initialize((context) => {
   if (initialIds.length) {
     lastRenderedIds = initialIdsTxt;
     fetchExceptionsByIds(initialIdsTxt);
-    // Still refresh in background in case the workflow appended a newer ID
     fetchFreshCustomer(0);
   } else {
-    // Show a stable empty state immediately instead of hanging on "Loading..."
     renderCards([]);
-    // Then check in the background for a newly-added first exception
     fetchFreshCustomer(0);
   }
 });
+</script>
