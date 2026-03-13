@@ -175,6 +175,3 @@ window.Kustomer.initialize((context) => {
 
   fetchFreshCustomer();
 });
-
-  fetchFreshCustomer();
-});
