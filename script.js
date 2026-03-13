@@ -1,4 +1,4 @@
-console.log('EXCEPTION CARD SCRIPT LOADED - v3');
+console.log('EXCEPTION CARD SCRIPT LOADED - v5');
 
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
@@ -9,6 +9,11 @@ window.Kustomer.initialize((context) => {
     context.conversation?.customer ||
     context.object ||
     {};
+
+  const customerId =
+    customer.id ||
+    customer.attributes?.id ||
+    '';
 
   const exceptionIDsTxt =
     customer.attributes?.custom?.exceptionLogIDsTxt ||
@@ -53,23 +58,51 @@ window.Kustomer.initialize((context) => {
         return;
       }
 
+      // newest first
+      items.sort((a, b) => {
+        const aDate = new Date(a.attributes?.createdAt || 0).getTime();
+        const bDate = new Date(b.attributes?.createdAt || 0).getTime();
+        return bDate - aDate;
+      });
+
       container.innerHTML = '';
 
       items.forEach((item) => {
+        const exceptionId = item.id;
         const title = item.attributes?.title || 'Exception';
         const created = item.attributes?.createdAt || '';
         const reason = item.attributes?.custom?.exceptionReasonStr || '—';
         const order = item.attributes?.custom?.orderNumberStr || '—';
+        const retailer = item.attributes?.custom?.retailerStr || '—';
+        const notes = item.attributes?.custom?.exceptionNotesTxt || '—';
 
-        const card = document.createElement('div');
+        const createdDisplay = created
+          ? new Date(created).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })
+          : '—';
+
+        const notesPreview =
+          notes.length > 120 ? `${notes.slice(0, 120)}…` : notes;
+
+        const card = document.createElement('a');
         card.className = 'exception-card';
+        card.href = `/app/customers/${customerId}/event/${exceptionId}`;
+        card.target = '_top';
+        card.rel = 'noopener noreferrer';
 
         card.innerHTML = `
           <div class="exception-title">${title}</div>
-          <div class="exception-date">${created ? new Date(created).toLocaleDateString() : '—'}</div>
+          <div class="exception-date">${createdDisplay}</div>
           <div class="exception-meta">
-            Reason: ${reason}<br/>
-            Order: ${order}
+            <div><strong>Reason:</strong> ${reason}</div>
+            <div><strong>Order:</strong> ${order}</div>
+            <div><strong>Retailer:</strong> ${retailer}</div>
+          </div>
+          <div class="exception-notes">
+            <strong>Notes:</strong> ${notesPreview}
           </div>
         `;
 
