@@ -1,18 +1,18 @@
-console.log('EXCEPTION CARD SCRIPT LOADED - v8');
+console.log('EXCEPTION CARD SCRIPT LOADED - v9');
 
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
 
   const contextCustomer =
-    context.customer ||
-    context.user?.customer ||
-    context.conversation?.customer ||
-    context.object ||
+    _.get(context, 'customer') ||
+    _.get(context, 'user.customer') ||
+    _.get(context, 'conversation.customer') ||
+    _.get(context, 'object') ||
     {};
 
   const customerId =
-    contextCustomer.id ||
-    contextCustomer.attributes?.id ||
+    _.get(contextCustomer, 'id') ||
+    _.get(contextCustomer, 'attributes.id') ||
     '';
 
   const container = document.getElementById('exceptions-list');
@@ -27,6 +27,8 @@ window.Kustomer.initialize((context) => {
       .split(',')
       .map(x => x.trim())
       .filter(Boolean);
+
+    console.log('Exception IDs from customer field:', exceptionIDs);
 
     if (!exceptionIDs.length) {
       container.innerHTML = 'No exceptions logged for this customer.';
@@ -44,15 +46,24 @@ window.Kustomer.initialize((context) => {
         console.log('DynamicCard request response:', response);
         console.log('DynamicCard request error:', error);
 
-        const items =
-          response?.data ||
-          response?.body?.data ||
-          response?.response?.data ||
-          (Array.isArray(response) ? response : null) ||
-          error?.data ||
-          error?.body?.data ||
-          error?.response?.data ||
-          (Array.isArray(error) ? error : []);
+        const rawItems =
+          _.get(response, 'data') ||
+          _.get(response, 'body.data') ||
+          _.get(response, 'response.data') ||
+          response ||
+          _.get(error, 'data') ||
+          _.get(error, 'body.data') ||
+          _.get(error, 'response.data') ||
+          error ||
+          [];
+
+        const items = Array.isArray(rawItems)
+          ? rawItems
+          : _.get(rawItems, 'id')
+            ? [rawItems]
+            : [];
+
+        console.log('Normalized exception items:', items);
 
         if (!items.length) {
           container.innerHTML = 'No exceptions logged for this customer.';
@@ -60,20 +71,20 @@ window.Kustomer.initialize((context) => {
         }
 
         items.sort((a, b) => {
-          const aDate = new Date(a.attributes?.createdAt || 0).getTime();
-          const bDate = new Date(b.attributes?.createdAt || 0).getTime();
+          const aDate = new Date(_.get(a, 'attributes.createdAt', 0)).getTime();
+          const bDate = new Date(_.get(b, 'attributes.createdAt', 0)).getTime();
           return bDate - aDate;
         });
 
         container.innerHTML = '';
 
         items.forEach((item) => {
-          const exceptionId = item.id;
-          const title = item.attributes?.title || 'Exception';
-          const created = item.attributes?.createdAt || '';
-          const reason = item.attributes?.custom?.exceptionReasonStr || '—';
-          const order = item.attributes?.custom?.orderNumberStr || '—';
-          const notes = item.attributes?.custom?.exceptionNotesTxt || '';
+          const exceptionId = _.get(item, 'id', '');
+          const title = _.get(item, 'attributes.title', 'Exception');
+          const created = _.get(item, 'attributes.createdAt', '');
+          const reason = _.get(item, 'attributes.custom.exceptionReasonStr', '—');
+          const order = _.get(item, 'attributes.custom.orderNumberStr', '—');
+          const notes = _.get(item, 'attributes.custom.exceptionNotesTxt', '');
 
           const createdDisplay = created
             ? new Date(created).toLocaleDateString('en-US', {
@@ -131,7 +142,6 @@ window.Kustomer.initialize((context) => {
     );
   };
 
-  // Fetch fresh customer data first so workflow updates are included
   window.Kustomer.request(
     {
       url: `/v1/customers/${customerId}`,
@@ -142,20 +152,22 @@ window.Kustomer.initialize((context) => {
       console.log('Fresh customer error:', error);
 
       const customerData =
-        response?.data ||
-        response?.body?.data ||
-        response?.response?.data ||
-        error?.data ||
-        error?.body?.data ||
-        error?.response?.data ||
-        error ||
+        _.get(response, 'data') ||
+        _.get(response, 'body.data') ||
+        _.get(response, 'response.data') ||
         response ||
+        _.get(error, 'data') ||
+        _.get(error, 'body.data') ||
+        _.get(error, 'response.data') ||
+        error ||
         {};
 
       const freshExceptionIDsTxt =
-        customerData?.attributes?.custom?.exceptionLogIDsTxt ||
-        customerData?.custom?.exceptionLogIDsTxt ||
+        _.get(customerData, 'attributes.custom.exceptionLogIDsTxt') ||
+        _.get(customerData, 'custom.exceptionLogIDsTxt') ||
         '';
+
+      console.log('Fresh exceptionLogIDsTxt:', freshExceptionIDsTxt);
 
       renderExceptions(freshExceptionIDsTxt);
     }
