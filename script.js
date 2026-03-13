@@ -123,9 +123,11 @@ window.Kustomer.initialize((context) => {
         container.appendChild(card);
       });
 
-      if (window.Kustomer.resize) {
-        window.Kustomer.resize();
-      }
+      setTimeout(() => {
+        if (window.Kustomer && window.Kustomer.resize) {
+          window.Kustomer.resize();
+        }
+      }, 100);
     }
   );
 });
