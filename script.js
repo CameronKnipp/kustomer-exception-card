@@ -72,7 +72,6 @@ window.Kustomer.initialize((context) => {
         const created = item.attributes?.createdAt || '';
         const reason = item.attributes?.custom?.exceptionReasonStr || '—';
         const order = item.attributes?.custom?.orderNumberStr || '—';
-        const retailer = item.attributes?.custom?.retailerStr || '—';
         const notes = item.attributes?.custom?.exceptionNotesTxt || '';
 
         const createdDisplay = created
@@ -112,7 +111,6 @@ window.Kustomer.initialize((context) => {
           <div class="exception-meta">
             <div><strong>Reason:</strong> ${reason}</div>
             <div><strong>Order:</strong> ${order}</div>
-            <div><strong>Retailer:</strong> ${retailer}</div>
           </div>
 
           <div class="exception-notes">
