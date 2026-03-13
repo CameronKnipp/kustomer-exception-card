@@ -1,4 +1,4 @@
-console.log('EXCEPTION CARD SCRIPT LOADED - v5');
+console.log('EXCEPTION CARD SCRIPT LOADED - v6');
 
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
@@ -58,7 +58,7 @@ window.Kustomer.initialize((context) => {
         return;
       }
 
-      // newest first
+      // sort newest first
       items.sort((a, b) => {
         const aDate = new Date(a.attributes?.createdAt || 0).getTime();
         const bDate = new Date(b.attributes?.createdAt || 0).getTime();
@@ -67,14 +67,18 @@ window.Kustomer.initialize((context) => {
 
       container.innerHTML = '';
 
+      const kustomerBaseUrl = 'https://nathanjames.kustomerapp.com';
+
       items.forEach((item) => {
+
         const exceptionId = item.id;
+
+        const targetUrl =
+          `${kustomerBaseUrl}/app/customers/${customerId}/event/${exceptionId}`;
+
         const title = item.attributes?.title || 'Exception';
+
         const created = item.attributes?.createdAt || '';
-        const reason = item.attributes?.custom?.exceptionReasonStr || '—';
-        const order = item.attributes?.custom?.orderNumberStr || '—';
-        const retailer = item.attributes?.custom?.retailerStr || '—';
-        const notes = item.attributes?.custom?.exceptionNotesTxt || '—';
 
         const createdDisplay = created
           ? new Date(created).toLocaleDateString('en-US', {
@@ -84,34 +88,63 @@ window.Kustomer.initialize((context) => {
             })
           : '—';
 
+        const reason =
+          item.attributes?.custom?.exceptionReasonStr || '—';
+
+        const order =
+          item.attributes?.custom?.orderNumberStr || '—';
+
+        const retailer =
+          item.attributes?.custom?.retailerStr || '—';
+
+        const notes =
+          item.attributes?.custom?.exceptionNotesTxt || '';
+
         const notesPreview =
           notes.length > 120 ? `${notes.slice(0, 120)}…` : notes;
 
-        const card = document.createElement('a');
-        card.className = 'exception-card';
-        card.href = `/app/customers/${customerId}/event/${exceptionId}`;
-        card.target = '_top';
-        card.rel = 'noopener noreferrer';
+        const card = document.createElement('div');
+
+        card.className = 'exception-card clickable';
+
+        card.onclick = () => {
+          window.top.location.href = targetUrl;
+        };
+
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+
+        card.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.top.location.href = targetUrl;
+          }
+        };
 
         card.innerHTML = `
           <div class="exception-title">${title}</div>
           <div class="exception-date">${createdDisplay}</div>
+
           <div class="exception-meta">
             <div><strong>Reason:</strong> ${reason}</div>
             <div><strong>Order:</strong> ${order}</div>
             <div><strong>Retailer:</strong> ${retailer}</div>
           </div>
+
           <div class="exception-notes">
-            <strong>Notes:</strong> ${notesPreview}
+            <strong>Notes:</strong> ${notesPreview || '—'}
           </div>
         `;
 
         container.appendChild(card);
+
       });
 
       if (window.Kustomer.resize) {
         window.Kustomer.resize();
       }
+
     }
   );
+
 });
