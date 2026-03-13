@@ -1,3 +1,5 @@
+console.log('EXCEPTION CARD SCRIPT LOADED - v3');
+
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
 
@@ -7,11 +9,6 @@ window.Kustomer.initialize((context) => {
     context.conversation?.customer ||
     context.object ||
     {};
-
-  const customerId =
-    customer.id ||
-    customer.attributes?.id ||
-    '';
 
   const exceptionIDsTxt =
     customer.attributes?.custom?.exceptionLogIDsTxt ||
@@ -41,16 +38,15 @@ window.Kustomer.initialize((context) => {
       console.log('DynamicCard request response:', response);
       console.log('DynamicCard request error:', error);
 
-      if (error) {
-        container.innerHTML = 'Failed to load exceptions.';
-        return;
-      }
-
       const items =
         response?.data ||
         response?.body?.data ||
         response?.response?.data ||
-        [];
+        (Array.isArray(response) ? response : null) ||
+        error?.data ||
+        error?.body?.data ||
+        error?.response?.data ||
+        (Array.isArray(error) ? error : []);
 
       if (!items.length) {
         container.innerHTML = 'No exceptions logged for this customer.';
