@@ -10,6 +10,10 @@ body {
   margin-bottom: 10px;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 .exception-card {
   display: block;
   border: 1px solid #e5e7eb;
