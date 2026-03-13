@@ -37,7 +37,7 @@ window.Kustomer.initialize(function (context) {
   function normalizeExceptionIds(rawValue) {
     if (rawValue == null) return [];
 
-    var cleaned = String(rawValue)
+    return String(rawValue)
       .split(',')
       .map(function (id) {
         return String(id).trim();
@@ -45,18 +45,20 @@ window.Kustomer.initialize(function (context) {
       .filter(function (id) {
         return id.length > 0;
       });
-
-    return cleaned;
   }
 
   function normalizeResponseToArray(response) {
     if (!response) return [];
 
-    var data =
-      response.data ||
-      response.body && response.body.data ||
-      response.response && response.response.data ||
-      response;
+    var data = response;
+
+    if (response.data !== undefined) {
+      data = response.data;
+    } else if (response.body && response.body.data !== undefined) {
+      data = response.body.data;
+    } else if (response.response && response.response.data !== undefined) {
+      data = response.response.data;
+    }
 
     if (!data) return [];
     if (Array.isArray(data)) return data;
@@ -191,7 +193,6 @@ window.Kustomer.initialize(function (context) {
 
   console.log('Raw exceptionLogIDsTxt:', rawExceptionIds);
 
-  // NORMALIZE BEFORE API TOUCHES ANYTHING
   var normalizedIds = normalizeExceptionIds(rawExceptionIds);
 
   console.log('Normalized exception IDs:', normalizedIds);
