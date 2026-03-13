@@ -1,4 +1,3 @@
-<script>
 console.log('EXCEPTION CARD SCRIPT LOADED - normalized pre-request version');
 
 window.Kustomer.initialize(function (context) {
@@ -224,4 +223,3 @@ window.Kustomer.initialize(function (context) {
       setEmptyState(container, 'Could not load exceptions.');
     });
 });
-</script>
