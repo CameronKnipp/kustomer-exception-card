@@ -1,4 +1,4 @@
-console.log('EXCEPTION CARD SCRIPT LOADED - v9');
+console.log('EXCEPTION CARD SCRIPT LOADED - v10');
 
 window.Kustomer.initialize((context) => {
   console.log('DynamicCard context:', context);
@@ -17,10 +17,16 @@ window.Kustomer.initialize((context) => {
 
   const container = document.getElementById('exceptions-list');
 
+  const setStatus = (msg) => {
+    if (container) container.innerHTML = msg;
+  };
+
   if (!customerId) {
-    container.innerHTML = 'Customer not found.';
+    setStatus('Customer not found.');
     return;
   }
+
+  let hasRetried = false;
 
   const renderExceptions = (exceptionIDsTxt) => {
     const exceptionIDs = (exceptionIDsTxt || '')
@@ -31,11 +37,26 @@ window.Kustomer.initialize((context) => {
     console.log('Exception IDs from customer field:', exceptionIDs);
 
     if (!exceptionIDs.length) {
-      container.innerHTML = 'No exceptions logged for this customer.';
+      if (!hasRetried) {
+        hasRetried = true;
+        setStatus('Loading exceptions...');
+        setTimeout(fetchFreshCustomer, 1200);
+        return;
+      }
+
+      setStatus('No exceptions logged for this customer.');
       return;
     }
 
     const joinedIDs = exceptionIDs.join(',');
+    let finished = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!finished) {
+        console.log('Exception fetch timed out.');
+        setStatus('Could not load exceptions. Refresh and try again.');
+      }
+    }, 5000);
 
     window.Kustomer.request(
       {
@@ -43,6 +64,10 @@ window.Kustomer.initialize((context) => {
         method: 'GET'
       },
       (response, error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutId);
+
         console.log('DynamicCard request response:', response);
         console.log('DynamicCard request error:', error);
 
@@ -66,7 +91,7 @@ window.Kustomer.initialize((context) => {
         console.log('Normalized exception items:', items);
 
         if (!items.length) {
-          container.innerHTML = 'No exceptions logged for this customer.';
+          setStatus('No exceptions logged for this customer.');
           return;
         }
 
@@ -142,34 +167,53 @@ window.Kustomer.initialize((context) => {
     );
   };
 
-  window.Kustomer.request(
-    {
-      url: `/v1/customers/${customerId}`,
-      method: 'GET'
-    },
-    (response, error) => {
-      console.log('Fresh customer response:', response);
-      console.log('Fresh customer error:', error);
+  const fetchFreshCustomer = () => {
+    setStatus('Loading exceptions...');
 
-      const customerData =
-        _.get(response, 'data') ||
-        _.get(response, 'body.data') ||
-        _.get(response, 'response.data') ||
-        response ||
-        _.get(error, 'data') ||
-        _.get(error, 'body.data') ||
-        _.get(error, 'response.data') ||
-        error ||
-        {};
+    let finished = false;
 
-      const freshExceptionIDsTxt =
-        _.get(customerData, 'attributes.custom.exceptionLogIDsTxt') ||
-        _.get(customerData, 'custom.exceptionLogIDsTxt') ||
-        '';
+    const timeoutId = setTimeout(() => {
+      if (!finished) {
+        console.log('Fresh customer fetch timed out.');
+        setStatus('Could not load exceptions. Refresh and try again.');
+      }
+    }, 5000);
 
-      console.log('Fresh exceptionLogIDsTxt:', freshExceptionIDsTxt);
+    window.Kustomer.request(
+      {
+        url: `/v1/customers/${customerId}`,
+        method: 'GET'
+      },
+      (response, error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutId);
 
-      renderExceptions(freshExceptionIDsTxt);
-    }
-  );
+        console.log('Fresh customer response:', response);
+        console.log('Fresh customer error:', error);
+
+        const customerData =
+          _.get(response, 'data') ||
+          _.get(response, 'body.data') ||
+          _.get(response, 'response.data') ||
+          response ||
+          _.get(error, 'data') ||
+          _.get(error, 'body.data') ||
+          _.get(error, 'response.data') ||
+          error ||
+          {};
+
+        const freshExceptionIDsTxt =
+          _.get(customerData, 'attributes.custom.exceptionLogIDsTxt') ||
+          _.get(customerData, 'custom.exceptionLogIDsTxt') ||
+          '';
+
+        console.log('Fresh exceptionLogIDsTxt:', freshExceptionIDsTxt);
+
+        renderExceptions(freshExceptionIDsTxt);
+      }
+    );
+  };
+
+  fetchFreshCustomer();
 });
