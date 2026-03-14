@@ -3,6 +3,8 @@ body {
   font-size: 13px;
   padding: 10px;
   margin: 0;
+  background: var(--background-primary-color, #ffffff);
+  color: var(--text-color, #111827);
 }
 
 #app h3 {
@@ -12,16 +14,16 @@ body {
 
 .clickable:hover {
   border-color: #52aaff;
-  background: #f0f9ff;
+  background: var(--background-hover-color, #f0f9ff);
 }
 
 .exception-card {
   display: block;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 8px;
-  background: #f8fafc;
+  background: var(--background-secondary-color, #f8fafc);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
@@ -29,7 +31,7 @@ body {
 
 .exception-card:hover {
   border-color: #52aaff;
-  background: #f0f9ff;
+  background: var(--background-hover-color, #f0f9ff);
   transform: translateY(-1px);
 }
 
@@ -40,7 +42,7 @@ body {
 
 .exception-date {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-color-secondary, #6b7280);
   margin-bottom: 8px;
 }
 
@@ -52,8 +54,8 @@ body {
 
 .exception-notes {
   font-size: 12px;
-  color: #374151;
+  color: var(--text-color-secondary, #374151);
   line-height: 1.45;
   padding-top: 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color, #e5e7eb);
 }
