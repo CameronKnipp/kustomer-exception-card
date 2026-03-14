@@ -3,8 +3,8 @@ body {
   font-size: 13px;
   padding: 10px;
   margin: 0;
-  background: var(--background-color);
-  color: var(--text-color);
+  background: var(--background-color, #ffffff);
+  color: var(--text-color, #111827);
 }
 
 #app h3 {
@@ -12,26 +12,22 @@ body {
   margin-bottom: 10px;
 }
 
-.clickable:hover {
-  border-color: #52aaff;
-  background: color-mix(in srgb, var(--card-background-color) 85%, #52aaff);
-}
-
 .exception-card {
   display: block;
-  border: 1px solid color-mix(in srgb, var(--border-color) 75%, white);
+  border: 1px solid var(--border-color, #d1d5db);
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 8px;
-  background: color-mix(in srgb, var(--card-background-color) 88%, white);
+  background: var(--card-background-color, #f8fafc);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
+.clickable:hover,
 .exception-card:hover {
   border-color: #52aaff;
-  background: color-mix(in srgb, var(--card-background-color) 85%, #52aaff);
+  background: var(--background-hover-color, #f0f9ff);
   transform: translateY(-1px);
 }
 
@@ -42,7 +38,7 @@ body {
 
 .exception-date {
   font-size: 12px;
-  color: var(--text-muted-color);
+  color: var(--text-muted-color, #6b7280);
   margin-bottom: 8px;
 }
 
@@ -54,8 +50,8 @@ body {
 
 .exception-notes {
   font-size: 12px;
-  color: var(--text-muted-color);
+  color: var(--text-muted-color, #374151);
   line-height: 1.45;
   padding-top: 8px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color, #e5e7eb);
 }
