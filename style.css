@@ -19,11 +19,11 @@ body {
 
 .exception-card {
   display: block;
-  border: 1px solid var(--border-color);
+  border: 1px solid color-mix(in srgb, var(--border-color) 75%, white);
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 8px;
-  background: var(--card-background-color);
+  background: color-mix(in srgb, var(--card-background-color) 88%, white);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
