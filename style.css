@@ -36,7 +36,7 @@ body {
 
 .exception-card:hover {
   border-color: #52aaff;
-  background: #f0f9ff;
+  var(--background-hover-color);
   transform: translateY(-1px);
 }
 
